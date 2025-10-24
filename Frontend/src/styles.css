@@ -1,0 +1,153 @@
+/* Theme variables are defined in theme.css to support system light/dark.
+  Do not redeclare :root variables here to avoid overriding auto theme. */
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app { min-height: 100%; display: flex; flex-direction: column; }
+
+.nav {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--border);
+}
+
+.nav .brand { font-weight: 700; }
+
+.nav .links { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.content { max-width: 1920px; margin: 0 auto; width: 100%; }
+
+.page { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+
+h1 { margin-top: 0; }
+
+/* Buttons using theme variables */
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--button-bg);
+  color: var(--button-text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:hover { filter: brightness(0.95); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn.outline { background: transparent; color: var(--button-bg); border-color: var(--button-bg); }
+
+/* Layout wrapper to allow sidebar and main content */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+/* Sidebar (hidden on small screens) */
+.sidebar {
+  display: none;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100dvh;
+  padding: 16px 12px;
+  border-right: 1px solid var(--border);
+  background: var(--card);
+}
+.sidebar .brand { font-weight: 800; margin-bottom: 12px; }
+
+.navlist { display: flex; flex-direction: column; gap: 6px; }
+
+/* Bottom nav (mobile) */
+.bottomnav {
+  position: sticky;
+  bottom: 0;
+  left: 0; right: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 8px 8px calc(env(safe-area-inset-bottom) + 8px);
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+
+/* Shared nav link styles */
+.navlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+  width: fit-content;
+}
+.navlink:hover { background: color-mix(in oklab, var(--card), var(--border) 40%); }
+.navlink.active { color: var(--button-bg); background: color-mix(in oklab, var(--button-bg), transparent 85%); }
+
+/* Icons and labels */
+.navicon { display: inline-flex; width: 24px; height: 24px; }
+.navtext { display: none; font-weight: 600; }
+
+/* Page content within layout */
+.layout > .content { padding-bottom: calc(env(safe-area-inset-bottom) + 64px); }
+
+/* Full-height centered layout for placeholder pages */
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 32px);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.screen > .center {
+  width: 100%;
+  max-width: 720px;
+  text-align: center;
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+  }
+  .sidebar { display: block; }
+  .bottomnav { display: none; }
+  .navtext { display: inline; }
+  .layout > .content { padding-bottom: 16px; }
+}
+
+/* -------- Forms -------- */
+.form-card { max-width: 420px; margin: 0 auto; }
+.form-header { text-align: center; margin-bottom: 1rem; }
+.form { display: block; }
+.form .field { display: grid; gap: 6px; margin-bottom: 12px; }
+.form label { font-weight: 600; font-size: 0.95rem; }
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 10px;
+  outline: none;
+}
+.input::placeholder { color: var(--muted); opacity: 0.8; }
+.input:focus { border-color: color-mix(in oklab, var(--primary), transparent 40%); box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary), transparent 85%); }
+.error { color: #dc2626; font-size: 0.9rem; }
+.muted { color: var(--muted); }
+.form-footer { margin-top: 8px; text-align: center; color: var(--muted); }
+.form-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+.form-footer a:hover { text-decoration: underline; }
