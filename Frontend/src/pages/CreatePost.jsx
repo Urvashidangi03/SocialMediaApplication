@@ -54,11 +54,31 @@ export default function CreatePost() {
     formData.append('image', imageFile)
     formData.append('mentions', mentions)
 
-    axios.post("http://localhost:3000/posts", formData, {withCredentials:true})
-    .then(response=>{
-      console.log(response.data)
+    axios.post("http://localhost:3001/posts", formData, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     })
-    
+    .then(response => {
+      console.log("Post created successfully:", response.data);
+      setSubmitting(false);
+      setImageFile(null);
+      setImagePreview(null);
+      setMentions('');
+      // Redirect to home page or show success message
+      window.location.href = '/';
+    })
+    .catch(error => {
+      console.error("Error creating post:", error);
+      if (error.response) {
+        console.error('Server response:', error.response.status, error.response.data);
+        alert('Failed to create post: ' + (error.response.data?.message || error.response.status));
+      } else {
+        alert("Failed to create post. Please check your network or server.");
+      }
+      setSubmitting(false);
+    });
   }
 
   return (

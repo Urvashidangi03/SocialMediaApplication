@@ -1,215 +1,234 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { io } from 'socket.io-client';
-import axios from 'axios';
-import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import io from 'socket.io-client';
 
-export default function Chat() {
-  const [chats, setChats] = useState([]);
+const Chat = () => {
+  const [conversations, setConversations] = useState([]);
+  const [activeChat, setActiveChat] = useState(null);
+  const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [currentChat, setCurrentChat] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const messagesEndRef = useRef(null);
-  const socketRef = useRef(null);
-  const { chatId } = useParams();
+  const socket = useRef(null);
+  const navigate = useNavigate();
 
-  // Connect to Socket.io
+  // Demo conversations (replace with actual data from your backend)
+  const demoConversations = [
+    {
+      id: 1,
+      user: { id: 1, name: 'Alex Chen', avatar: 'https://i.pravatar.cc/150?img=1' },
+      lastMessage: 'Hey, how are you doing?',
+      timestamp: '10:30 AM'
+    },
+    {
+      id: 2,
+      user: { id: 2, name: 'Sarah Wilson', avatar: 'https://i.pravatar.cc/150?img=5' },
+      lastMessage: 'The project looks great! 🎉',
+      timestamp: 'Yesterday'
+    },
+    {
+      id: 3,
+      user: { id: 3, name: 'Mike Johnson', avatar: 'https://i.pravatar.cc/150?img=8' },
+      lastMessage: 'Did you see the latest updates?',
+      timestamp: '2 days ago'
+    }
+  ];
+
   useEffect(() => {
-    socketRef.current = io();
+    setConversations(demoConversations);
     
-    socketRef.current.on('message', (message) => {
-      setMessages(prev => [...prev, message]);
+    socket.current = io('http://localhost:3000', {
+    withCredentials: true,
+    transports: ['websocket', 'polling']
     });
+    
+    socket.current.on('message', handleNewMessage);
+    socket.current.on('userOnline', handleUserOnline);
+    socket.current.on('userOffline', handleUserOffline);
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      if (socket.current) {
+        socket.current.disconnect();
       }
     };
   }, []);
 
-  // Fetch chats
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const response = await axios.get('http://localhost:3000/api/chats');
-        setChats(response.data);
-        console.log('Fetched chats:', response.data);
-      } catch (error) {
-        console.error('Error fetching chats:', error);
-      }
-    };
-    fetchChats();
-  }, []);
+  const handleNewMessage = (msg) => {
+    setMessages(prev => [...prev, msg]);
+    scrollToBottom();
+  };
 
-  // Fetch messages when chat changes
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (chatId) {
-        try {
-          const response = await axios.get(`/api/messages/${chatId}`);
-          setMessages(response.data);
-          setCurrentChat(chats.find(chat => chat._id === chatId));
-        } catch (error) {
-          console.error('Error fetching messages:', error);
-        }
-      }
-    };
-    fetchMessages();
-  }, [chatId, chats]);
+  const handleUserOnline = (userId) => {
+    setOnlineUsers(prev => new Set([...prev, userId]));
+  };
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
+  const handleUserOffline = (userId) => {
+    setOnlineUsers(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(userId);
+      return newSet;
+    });
+  };
+
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  };
 
-  const sendMessage = async (e) => {
+  const sendMessage = (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentChat) return;
+    if (!message.trim()) return;
 
-    try {
-      const response = await axios.post('/api/messages', {
-        chatId: currentChat._id,
-        content: newMessage
-      });
-      
-      // Emit message through socket
-      socketRef.current?.emit('message', response.data);
-      
-      setNewMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
+    const newMessage = {
+      id: Date.now(),
+      text: message,
+      sender: 'me',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    socket.current.emit('sendMessage', {
+      text: message,
+      recipientId: activeChat?.user.id
+    });
+
+    setMessages(prev => [...prev, newMessage]);
+    setMessage('');
+    scrollToBottom();
   };
 
   return (
-    <div className="h-screen flex">
-      {/* Sidebar */}
-      <div className={`bg-white border-r border-gray-200 ${
-        isSidebarOpen ? 'w-80' : 'w-0 -ml-80'
-      } transition-all duration-300 flex-shrink-0 md:w-80 md:ml-0`}>
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Chats</h2>
-          <button 
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-gray-500 hover:text-gray-700"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="overflow-y-auto h-[calc(100vh-4rem)]">
-          {chats.map((chat) => (
-            <div
-              key={chat._id}
-              onClick={() => setCurrentChat(chat)}
-              className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                currentChat?._id === chat._id ? 'bg-gray-50' : ''
-              }`}
-            >
-              <div className="flex items-center space-x-4">
-                <img
-                  src={chat.participants[0]?.profilePicture || '/default-avatar.png'}
-                  alt="Profile"
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <h3 className="font-medium">{chat.participants[0]?.username}</h3>
-                  <p className="text-sm text-gray-500 truncate">
-                    {chat.lastMessage?.content || 'No messages yet'}
-                  </p>
-                </div>
-                {chat.unreadCount > 0 && (
-                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                    {chat.unreadCount}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-50">
-        {/* Chat Header */}
-        <div className="bg-white border-b border-gray-200 p-4 flex items-center">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="md:hidden mr-4 text-gray-500 hover:text-gray-700"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          {currentChat ? (
-            <div className="flex items-center">
-              <img
-                src={currentChat.participants[0]?.profilePicture || '/default-avatar.png'}
-                alt="Profile"
-                className="w-10 h-10 rounded-full object-cover mr-3"
-              />
-              <h2 className="text-lg font-semibold">
-                {currentChat.participants[0]?.username}
-              </h2>
-            </div>
-          ) : (
-            <h2 className="text-lg font-semibold">Select a chat to start messaging</h2>
-          )}
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {messages.map((message) => (
-            <div
-              key={message._id}
-              className={`flex mb-4 ${
-                message.sender === currentChat?.participants[0]?._id
-                  ? 'justify-start'
-                  : 'justify-end'
-              }`}
-            >
+    <div className="container grid h-[calc(100vh-64px)]" style={{ maxWidth: '1200px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-0 bg-card rounded-lg border border-border overflow-hidden">
+        {/* Conversations List */}
+        <div className="border-r border-border overflow-y-auto">
+          <div className="p-4 border-b border-border">
+            <h2 className="text-xl font-semibold text-text">Messages</h2>
+          </div>
+          <div className="divide-y divide-border">
+            {conversations.map(conv => (
               <div
-                className={`max-w-[70%] ${
-                  message.sender === currentChat?.participants[0]?._id
-                    ? 'bg-white'
-                    : 'bg-blue-500 text-white'
-                } rounded-lg p-3 shadow-sm`}
+                key={conv.id}
+                onClick={() => setActiveChat(conv)}
+                className={`p-4 hover:bg-bg cursor-pointer transition-colors ${
+                  activeChat?.id === conv.id ? 'bg-bg/50' : ''
+                }`}
               >
-                <p className="break-words">{message.content}</p>
-                <p className="text-xs mt-1 opacity-75">
-                  {format(new Date(message.createdAt), 'HH:mm')}
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <img
+                      src={conv.user.avatar}
+                      alt={conv.user.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    {onlineUsers.has(conv.user.id) && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card"></span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline">
+                      <h3 className="font-medium text-text truncate">{conv.user.name}</h3>
+                      <span className="text-xs text-muted whitespace-nowrap ml-2">{conv.timestamp}</span>
+                    </div>
+                    <p className="text-sm text-muted truncate">{conv.lastMessage}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Chat Area */}
+        <div className="flex flex-col bg-bg">
+          {activeChat ? (
+            <>
+              {/* Chat Header */}
+              <div className="p-4 border-b border-border flex items-center gap-3 bg-card">
+                <img
+                  src={activeChat.user.avatar}
+                  alt={activeChat.user.name}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+                <div>
+                  <h3 className="font-medium text-text">{activeChat.user.name}</h3>
+                  <span className="text-sm text-muted">
+                    {onlineUsers.has(activeChat.user.id) ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map(msg => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[70%] rounded-lg p-3 ${
+                        msg.sender === 'me'
+                          ? 'bg-primary text-white ml-8 rounded-br-sm'
+                          : 'bg-card border border-border mr-8 rounded-bl-sm'
+                      }`}
+                    >
+                      <p className="text-sm">{msg.text}</p>
+                      <span
+                        className={`text-xs ${
+                          msg.sender === 'me' ? 'text-white/70' : 'text-muted'
+                        } block mt-1`}
+                      >
+                        {msg.timestamp}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Input */}
+              <form onSubmit={sendMessage} className="p-4 border-t border-border bg-card">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-bg rounded-lg border border-border px-4 py-2 text-text placeholder:text-muted focus:outline-none focus:border-primary"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-primary text-button-text rounded-lg px-6 py-2 hover:bg-opacity-90 transition-colors"
+                  >
+                    Send
+                  </button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-muted p-4">
+                <svg
+                  className="mx-auto h-10 w-10 text-muted"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-text">No chat selected</h3>
+                <p className="mt-1 text-sm">
+                  Choose a conversation from the list to start chatting
                 </p>
               </div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
+          )}
         </div>
-
-        {/* Message Input */}
-        {currentChat && (
-          <form onSubmit={sendMessage} className="bg-white border-t border-gray-200 p-4">
-            <div className="flex space-x-4">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                type="submit"
-                disabled={!newMessage.trim()}
-                className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Send
-              </button>
-            </div>
-          </form>
-        )}
       </div>
     </div>
   );
-}
+};
+
+export default Chat;

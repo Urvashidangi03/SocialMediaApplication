@@ -11,8 +11,8 @@ async function startServer() {
         await connectDB();
         setupSocket(httpServer);
         
-        httpServer.listen(3001, () => {
-            console.log("Server is running on port 3001");
+        httpServer.listen(3000, () => {
+            console.log("Server is running on port 3000");
         });
     } catch (err) {
         console.error("Failed to start server:", err);

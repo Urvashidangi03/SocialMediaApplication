@@ -44,9 +44,33 @@ export default function Home() {
   const [posts, setPosts] = useState([])
 
   useEffect(()=>{
+    console.log("Fetching posts...");
     axios.get("http://localhost:3001/posts?skip=0&limit=20",{withCredentials:true}).then(response=>{
-      console.log(response.data)
-      setPosts(response.data.posts)
+      console.log("Posts response:", response.data);
+      console.log("Response structure:", {
+        message: response.data.message,
+        postsCount: response.data.posts ? response.data.posts.length : 0,
+        samplePost: response.data.posts && response.data.posts[0] ? {
+          id: response.data.posts[0]._id,
+          image: response.data.posts[0].image,
+          caption: response.data.posts[0].caption,
+          user: response.data.posts[0].user,
+          likeCount: response.data.posts[0].likeCount
+        } : null
+      });
+      
+      if (response.data.posts && Array.isArray(response.data.posts)) {
+        if (response.data.posts.length === 0) {
+          console.log("No posts found in the database");
+        }
+        setPosts(response.data.posts);
+      } else {
+        console.error("Invalid posts data structure:", response.data);
+        setPosts([]);
+      }
+    }).catch(error => {
+      console.error("Error fetching posts:", error);
+      setPosts([]);
     })
   },[])
 

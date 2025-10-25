@@ -1,16 +1,28 @@
 import postModel from "../models/post.model.js"
+import userModel from "../models/user.model.js"
 
 export async function createPost(data) {
+    const {mentions = [], url, caption, user} = data
     
-    const {mentions,url,caption,user} = data
+    let mentionIds = [];
+    if (mentions.length > 0) {
+        try {
+            mentionIds = await Promise.all(mentions.map(async username => {
+                const user = await userModel.findOne({username});
+                return user ? user._id : null;
+            }));
+            mentionIds = mentionIds.filter(id => id !== null); // Remove any null values
+        } catch (error) {
+            console.warn('Error processing mentions:', error);
+            // Continue with empty mentions if there's an error
+        }
+    }
 
     return await postModel.create({
         image: url,
         caption,
         user,
-        mentions:await Promise.all(mentions.map(async username =>{
-            return (await userModel.findOne({username}))._id
-        }))
+        mentions: mentionIds
     })
 
 }

@@ -26,8 +26,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: 'https://ik.imagekit.io/uy58fssmo/default-profile.png',
         trim: true
-    }
-    
+    },
+    followers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    following: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 })
 
 const userModel = mongoose.model('User', userSchema);

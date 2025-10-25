@@ -1,10 +1,10 @@
 import axios from 'axios'
 
-export default function PostCard({ id,username, avatarUrl, postImage, likesCount, caption, comments = [].setPosts }) {
+export default function PostCard({ id, username, avatarUrl, postImage, likesCount, caption, comments = [], setPosts }) {
   const preview = Array.isArray(comments) ? comments.slice(0, 2) : []
 
   const likePost = () => {
-    axios.post("http://localhost:3000/like",{
+    axios.post("http://localhost:3001/like",{
       post: id
     },{withCredentials:true}).then(response=>{
       console.log(response.data)
