@@ -1,6 +1,5 @@
 import messageModel from "../models/message.model.js"
 
-
 export async function createMessage({
     receiver,
     sender,

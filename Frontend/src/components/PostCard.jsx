@@ -4,7 +4,7 @@ export default function PostCard({ id, username, avatarUrl, postImage, likesCoun
   const preview = Array.isArray(comments) ? comments.slice(0, 2) : []
 
   const likePost = () => {
-    axios.post("http://localhost:3001/like",{
+    axios.post("http://localhost:3000/like",{
       post: id
     },{withCredentials:true}).then(response=>{
       console.log(response.data)
@@ -15,7 +15,7 @@ export default function PostCard({ id, username, avatarUrl, postImage, likesCoun
   return (
     <article className="post card">
       <header className="post-header">
-        <img className="avatar" src={avatarUrl} alt={`${username} avatar`} />
+        <img className="avatar" src={avatarUrl || "https://imagekit.io/dashboard/media-library/detail/68fe51f85c7cd75eb8bfe46e"} alt={`${username} avatar`} />
         <div className="user">
           <strong className="username">{username}</strong>
         </div>

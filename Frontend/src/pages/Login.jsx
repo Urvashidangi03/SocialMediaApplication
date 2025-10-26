@@ -17,7 +17,7 @@ export default function Login() {
     e.preventDefault();
     
     axios.post(
-      "http://localhost:3001/auth/login",
+      "http://localhost:3000/auth/login",
       form,
       { withCredentials: true }
     )

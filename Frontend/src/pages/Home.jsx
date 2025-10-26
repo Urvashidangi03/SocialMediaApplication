@@ -45,8 +45,7 @@ export default function Home() {
 
   useEffect(()=>{
     console.log("Fetching posts...");
-    axios.get("http://localhost:3001/posts?skip=0&limit=20",{withCredentials:true}).then(response=>{
-      console.log("Posts response:", response.data);
+    axios.get("http://localhost:3000/posts?skip=0&limit=20",{withCredentials:true}).then(response=>{
       console.log("Response structure:", {
         message: response.data.message,
         postsCount: response.data.posts ? response.data.posts.length : 0,

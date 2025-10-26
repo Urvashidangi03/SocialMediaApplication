@@ -17,7 +17,7 @@ export default function UserSearch() {
     setError(null)
 
     try {
-      const response = await axios.get(`http://localhost:3001/users/search?query=${encodeURIComponent(query)}`, {
+      const response = await axios.get(`http://localhost:3000/users/search?query=${encodeURIComponent(query)}`, {
         withCredentials: true
       })
       setUsers(response.data)

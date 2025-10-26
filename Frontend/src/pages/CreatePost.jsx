@@ -54,7 +54,7 @@ export default function CreatePost() {
     formData.append('image', imageFile)
     formData.append('mentions', mentions)
 
-    axios.post("http://localhost:3001/posts", formData, {
+    axios.post("http://localhost:3000/posts", formData, {
       withCredentials: true,
       headers: {
         'Content-Type': 'multipart/form-data'
